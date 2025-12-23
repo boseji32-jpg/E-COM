@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxe | Modern E-Commerce</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .cart-slide-in {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+
+        /* Product Card Hover Effect */
+        .product-card {
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Toast Notification */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .toast {
+            background: white;
+            border-left: 4px solid #10b981;
+            padding: 1rem;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-out;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        /* Loader */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #000;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+    <!-- Header / Navbar -->
+    <nav class="fixed top-0 w-full bg-white/90 backdrop-blur-md border-b border-gray-200 z-40 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="renderHome()">
+                    <div class="bg-black text-white p-1.5 rounded-lg">
+                        <i class="ph ph-shopping-bag text-xl"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight">LUXE</span>
+                </div>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" class="text-gray-600 hover:text-black font-medium transition-colors" onclick="renderHome()">Home</a>
+                    <a href="#products" class="text-gray-600 hover:text-black font-medium transition-colors">Shop</a>
+                    <a href="#new" class="text-gray-600 hover:text-black font-medium transition-colors">New Arrivals</a>
+                    <a href="#about" class="text-gray-600 hover:text-black font-medium transition-colors">About</a>
+                </div>
+
+                <!-- Icons -->
+                <div class="flex items-center gap-4">
+                    <button class="p-2 text-gray-600 hover:text-black transition-colors rounded-full hover:bg-gray-100 relative" onclick="toggleCart()">
+                        <i class="ph ph-shopping-cart text-2xl"></i>
+                        <span id="cart-count" class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full opacity-0 transition-opacity duration-200">0</span>
+                    </button>
+                    <button class="md:hidden p-2 text-gray-600 hover:text-black transition-colors rounded-full hover:bg-gray-100" onclick="toggleMobileMenu()">
+                        <i class="ph ph-list text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu (Hidden by default) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-black hover:bg-gray-50">Home</a>
+                <a href="#products" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-black hover:bg-gray-50">Shop</a>
+                <a href="#new" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-black hover:bg-gray-50">New Arrivals</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="pt-16">
+        
+        <!-- Hero Section -->
+        <div class="relative bg-gray-900 text-white overflow-hidden">
+            <div class="absolute inset-0">
+                <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80" alt="Fashion background" class="w-full h-full object-cover opacity-40">
+            </div>
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center animate-fade-in">
+                <span class="text-sm font-semibold tracking-wider text-gray-300 uppercase mb-4">Summer Collection 2024</span>
+                <h1 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">Elevate Your Style<br>With Minimalist Trends</h1>
+                <p class="text-lg text-gray-300 mb-8 max-w-2xl">Discover handpicked essentials for your wardrobe. Premium quality, sustainable materials, and timeless designs.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button onclick="scrollToProducts()" class="px-8 py-3 bg-white text-black font-semibold rounded-full hover:bg-gray-100 transition-colors shadow-lg transform hover:scale-105 active:scale-95 duration-200">
+                        Shop Now
+                    </button>
+                    <button class="px-8 py-3 border border-white text-white font-semibold rounded-full hover:bg-white/10 transition-colors">
+                        View Lookbook
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm" id="products">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <h2 class="text-2xl font-bold text-gray-900">All Products</h2>
+                    <div class="flex gap-2 overflow-x-auto pb-2 sm:pb-0 no-scrollbar">
+                        <button onclick="filterProducts('all')" class="filter-btn active px-4 py-2 rounded-full text-sm font-medium bg-black text-white hover:bg-gray-800 transition-colors whitespace-nowrap" data-category="all">All</button>
+                        <button onclick="filterProducts('electronics')" class="filter-btn px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors whitespace-nowrap" data-category="electronics">Electronics</button>
+                        <button onclick="filterProducts('clothing')" class="filter-btn px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors whitespace-nowrap" data-category="clothing">Clothing</button>
+                        <button onclick="filterProducts('accessories')" class="filter-btn px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors whitespace-nowrap" data-category="accessories">Accessories</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Products will be injected here via JS -->
+                <div class="col-span-full flex justify-center py-12">
+                   <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="bg-gray-100 py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="p-6 bg-white rounded-xl shadow-sm">
+                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="ph ph-truck text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold mb-2">Free Shipping</h3>
+                        <p class="text-gray-500 text-sm">On all orders over $50. Global delivery available.</p>
+                    </div>
+                    <div class="p-6 bg-white rounded-xl shadow-sm">
+                        <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="ph ph-shield-check text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold mb-2">Secure Payment</h3>
+                        <p class="text-gray-500 text-sm">100% secure payment with 256-bit SSL encryption.</p>
+                    </div>
+                    <div class="p-6 bg-white rounded-xl shadow-sm">
+                        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="ph ph-arrow-counter-clockwise text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold mb-2">30 Day Returns</h3>
+                        <p class="text-gray-500 text-sm">Don't love it? Return it within 30 days for a full refund.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white pt-12 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="bg-white text-black p-1 rounded">
+                            <i class="ph ph-shopping-bag text-lg"></i>
+                        </div>
+                        <span class="font-bold text-xl">LUXE</span>
+                    </div>
+                    <p class="text-gray-400 text-sm max-w-xs mb-6">
+                        Your one-stop destination for premium lifestyle products. We believe in quality, sustainability, and exceptional customer service.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="ph ph-facebook-logo text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="ph ph-twitter-logo text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="ph ph-instagram-logo text-xl"></i></a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Home</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Shop</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">About Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold mb-4">Customer Care</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Shipping Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Returns</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+                <p>&copy; 2026 Luxe Inc. All rights reserved.</p>
+                <div class="flex items-center gap-4 mt-4 md:mt-0">
+                    <i class="ph ph-credit-card text-xl"></i>
+                    <i class="ph ph-paypal-logo text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Shopping Cart Sidebar (Overlay + Drawer) -->
+    <div id="cart-overlay" class="fixed inset-0 bg-black/50 z-50 hidden transition-opacity duration-300 opacity-0" onclick="toggleCart()"></div>
+    
+    <div id="cart-drawer" class="fixed inset-y-0 right-0 max-w-md w-full bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
+        <!-- Cart Header -->
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
+            <h2 class="text-lg font-bold flex items-center gap-2">
+                <i class="ph ph-shopping-cart"></i> Your Cart
+            </h2>
+            <button onclick="toggleCart()" class="text-gray-400 hover:text-gray-900 transition-colors p-2 rounded-full hover:bg-gray-100">
+                <i class="ph ph-x text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Cart Items Container -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6" id="cart-items-container">
+            <!-- Empty state (default) -->
+            <div class="h-full flex flex-col items-center justify-center text-center space-y-4">
+                <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                    <i class="ph ph-basket text-4xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900">Your cart is empty</h3>
+                <p class="text-gray-500 max-w-xs">Looks like you haven't added anything to your cart yet.</p>
+                <button onclick="toggleCart(); scrollToProducts()" class="mt-4 px-6 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors">Start Shopping</button>
+            </div>
+        </div>
+
+        <!-- Cart Footer -->
+        <div class="border-t border-gray-100 p-6 bg-gray-50">
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between text-gray-500">
+                    <span>Subtotal</span>
+                    <span id="cart-subtotal">$0.00</span>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Tax (5%)</span>
+                    <span id="cart-tax">$0.00</span>
+                </div>
+                <div class="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-200 pt-3">
+                    <span>Total</span>
+                    <span id="cart-total">$0.00</span>
+                </div>
+            </div>
+            <button onclick="checkout()" class="w-full py-4 bg-black text-white font-bold rounded-lg shadow-lg hover:bg-gray-800 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                Checkout <i class="ph ph-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script>
+        // --- Data ---
+        const products = [
+            {
+                id: 1,
+                name: "Minimalist Analog Watch",
+                price: 129.00,
+                category: "accessories",
+                image: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 2,
+                name: "Premium Wireless Headphones",
+                price: 249.99,
+                category: "electronics",
+                image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 3,
+                name: "Classic Leather Sneakers",
+                price: 89.50,
+                category: "clothing",
+                image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 4,
+                name: "Vintage Film Camera",
+                price: 450.00,
+                category: "electronics",
+                image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 5,
+                name: "Cotton Oxford Shirt",
+                price: 55.00,
+                category: "clothing",
+                image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 6,
+                name: "Designer Sunglasses",
+                price: 159.00,
+                category: "accessories",
+                image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 7,
+                name: "Smart Speaker Mini",
+                price: 49.99,
+                category: "electronics",
+                image: "https://images.unsplash.com/photo-1589492477829-5e65395b66cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            },
+            {
+                id: 8,
+                name: "Denim Jacket",
+                price: 79.99,
+                category: "clothing",
+                image: "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            }
+        ];
+
+        // --- State ---
+        let cart = [];
+
+        // --- DOM Elements ---
+        const productGrid = document.getElementById('product-grid');
+        const cartOverlay = document.getElementById('cart-overlay');
+        const cartDrawer = document.getElementById('cart-drawer');
+        const cartItemsContainer = document.getElementById('cart-items-container');
+        const cartCountBadge = document.getElementById('cart-count');
+        const cartSubtotalEl = document.getElementById('cart-subtotal');
+        const cartTaxEl = document.getElementById('cart-tax');
+        const cartTotalEl = document.getElementById('cart-total');
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Simulate loading delay for realism
+            setTimeout(() => {
+                renderProducts(products);
+            }, 600);
+            
+            // Load cart from local storage if desired, keeping simple for now
+        });
+
+        // --- Functions ---
+
+        function renderProducts(items) {
+            productGrid.innerHTML = '';
+            
+            if(items.length === 0) {
+                productGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-12">No products found in this category.</div>';
+                return;
+            }
+
+            items.forEach((product, index) => {
+                const delay = index * 100; // Stagger animation
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden product-card animate-fade-in flex flex-col h-full';
+                card.style.animationDelay = `${delay}ms`;
+                
+                card.innerHTML = `
+                    <div class="relative group h-64 overflow-hidden bg-gray-100">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button onclick="addToCart(${product.id})" class="bg-white text-black px-6 py-2 rounded-full font-bold transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 hover:bg-gray-100 shadow-lg">
+                                Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-5 flex flex-col flex-grow">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">${product.category}</div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2 leading-tight">${product.name}</h3>
+                        <div class="mt-auto flex items-center justify-between">
+                            <span class="text-xl font-bold text-gray-900">$${product.price.toFixed(2)}</span>
+                            <button onclick="addToCart(${product.id})" class="md:hidden w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 active:bg-gray-200">
+                                <i class="ph ph-plus-bold"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                productGrid.appendChild(card);
+            });
+        }
+
+        function filterProducts(category) {
+            // Update UI buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.dataset.category === category) {
+                    btn.classList.remove('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+                    btn.classList.add('bg-black', 'text-white', 'hover:bg-gray-800');
+                } else {
+                    btn.classList.remove('bg-black', 'text-white', 'hover:bg-gray-800');
+                    btn.classList.add('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+                }
+            });
+
+            // Filter logic
+            if (category === 'all') {
+                renderProducts(products);
+            } else {
+                const filtered = products.filter(p => p.category === category);
+                renderProducts(filtered);
+            }
+        }
+
+        function toggleCart() {
+            const isOpen = !cartDrawer.classList.contains('translate-x-full');
+            
+            if (isOpen) {
+                // Close
+                cartDrawer.classList.add('translate-x-full');
+                cartOverlay.classList.remove('opacity-100');
+                cartOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    cartOverlay.classList.add('hidden');
+                }, 300);
+            } else {
+                // Open
+                cartOverlay.classList.remove('hidden');
+                // Trigger reflow
+                void cartOverlay.offsetWidth;
+                cartOverlay.classList.add('opacity-100');
+                cartOverlay.classList.remove('opacity-0');
+                cartDrawer.classList.remove('translate-x-full');
+            }
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existingItem = cart.find(item => item.id === productId);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+                showToast(`Increased quantity of <b>${product.name}</b>`);
+            } else {
+                cart.push({ ...product, quantity: 1 });
+                showToast(`Added <b>${product.name}</b> to cart`);
+            }
+
+            updateCartUI();
+            
+            // Optional: Open cart automatically on first add or keep it subtle
+            // toggleCart(); 
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+        }
+
+        function changeQuantity(productId, delta) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    updateCartUI();
+                }
+            }
+        }
+
+        function updateCartUI() {
+            // Update Count Badge
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCountBadge.innerText = totalItems;
+            
+            if(totalItems > 0) {
+                cartCountBadge.classList.remove('opacity-0');
+                cartCountBadge.classList.add('animate-bounce');
+                setTimeout(() => cartCountBadge.classList.remove('animate-bounce'), 1000);
+            } else {
+                cartCountBadge.classList.add('opacity-0');
+            }
+
+            // Render Cart Items
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center space-y-4 animate-fade-in">
+                        <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                            <i class="ph ph-basket text-4xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900">Your cart is empty</h3>
+                        <p class="text-gray-500 max-w-xs">Looks like you haven't added anything to your cart yet.</p>
+                        <button onclick="toggleCart(); scrollToProducts()" class="mt-4 px-6 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors">Start Shopping</button>
+                    </div>
+                `;
+            } else {
+                cartItemsContainer.innerHTML = '';
+                cart.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'flex gap-4 animate-fade-in';
+                    itemEl.innerHTML = `
+                        <div class="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden border border-gray-200">
+                            <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-medium text-gray-900 line-clamp-2">${item.name}</h4>
+                                    <button onclick="removeFromCart(${item.id})" class="text-gray-400 hover:text-red-500 transition-colors p-1">
+                                        <i class="ph ph-trash"></i>
+                                    </button>
+                                </div>
+                                <p class="text-sm text-gray-500">$${item.price.toFixed(2)}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center border border-gray-300 rounded-md">
+                                    <button onclick="changeQuantity(${item.id}, -1)" class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors">-</button>
+                                    <span class="text-sm font-medium w-6 text-center">${item.quantity}</span>
+                                    <button onclick="changeQuantity(${item.id}, 1)" class="w-8 h-8 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors">+</button>
+                                </div>
+                                <div class="text-sm font-bold ml-auto">
+                                    $${(item.price * item.quantity).toFixed(2)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    cartItemsContainer.appendChild(itemEl);
+                });
+            }
+
+            // Calculate Totals
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * 0.05;
+            const total = subtotal + tax;
+
+            cartSubtotalEl.innerText = '$' + subtotal.toFixed(2);
+            cartTaxEl.innerText = '$' + tax.toFixed(2);
+            cartTotalEl.innerText = '$' + total.toFixed(2);
+        }
+
+        // --- Utils ---
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            
+            toast.innerHTML = `
+                <div class="text-green-500 bg-green-50 rounded-full p-1">
+                    <i class="ph ph-check-circle text-xl"></i>
+                </div>
+                <div class="text-sm font-medium text-gray-800">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function scrollToProducts() {
+            document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                showToast('Your cart is empty!');
+                return;
+            }
+            
+            // Simulate checkout process
+            const btn = document.querySelector('#cart-drawer button.bg-black');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<div class="loader" style="border-top-color: white; width: 20px; height: 20px;"></div> Processing...';
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                
+                // Success
+                cart = [];
+                updateCartUI();
+                toggleCart();
+                
+                // Show success modal or simple alert substitute
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 animate-fade-in';
+                overlay.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl transform scale-100">
+                        <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="ph ph-check text-4xl font-bold"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Order Confirmed!</h2>
+                        <p class="text-gray-500 mb-6">Thank you for your purchase. Your order #88321 is on its way.</p>
+                        <button onclick="this.closest('.fixed').remove()" class="w-full py-3 bg-black text-white rounded-lg font-bold hover:bg-gray-800 transition-colors">
+                            Continue Shopping
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            }, 2000);
+        }
+        
+        function renderHome() {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+        
+        // Close mobile menu on resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                document.getElementById('mobile-menu').classList.add('hidden');
+            }
+        });
+
+        // Sticky Navbar shadow effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 10) {
+                nav.classList.add('shadow-md');
+            } else {
+                nav.classList.remove('shadow-md');
+            }
+        });
+
+    </script>
+</body>
+</html>
